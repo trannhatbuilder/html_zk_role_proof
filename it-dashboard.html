@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.1/build/snarkjs.min.js"></script>
+  <script src="/static/bundle.umd.js"></script>
+  <script src="/static/create_proof.js"></script>
+  <script src="/home/changePass.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0a2463;
+      --primary-light: #3e92cc;
+      --secondary: #1e88e5;
+      --accent: #13c2c2;
+      --gray-dark: #2d3748;
+      --gray-light: #f7fafc;
+      --success: #52c41a;
+      --warning: #faad14;
+      --danger: #f5222d;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f0f5ff;
+      min-height: 100vh;
+      color: var(--gray-dark);
+    }
+
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+
+    .logo-area {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-link {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.3s;
+      margin: 0.25rem 0;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .sidebar-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-link.active {
+      background: rgba(255, 255, 255, 0.2);
+      font-weight: 600;
+    }
+
+    .main-content {
+      padding: 2rem;
+    }
+
+    .status-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s;
+    }
+
+    .status-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      border-bottom: 1px solid #eaeaea;
+    }
+
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-primary {
+      background-color: rgba(62, 146, 204, 0.1);
+      color: var(--primary-light);
+    }
+
+    .badge-success {
+      background-color: rgba(82, 196, 26, 0.1);
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background-color: rgba(250, 173, 20, 0.1);
+      color: var(--warning);
+    }
+
+    .badge-danger {
+      background-color: rgba(245, 34, 45, 0.1);
+      color: var(--danger);
+    }
+
+    .password-form {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      font-weight: 600;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      transition: all 0.3s;
+      border: none;
+      box-shadow: 0 4px 12px rgba(10, 36, 99, 0.15);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(90deg, var(--primary-light) 0%, var(--primary) 100%);
+      box-shadow: 0 6px 16px rgba(10, 36, 99, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(62, 146, 204, 0.15);
+    }
+
+    .security-feature {
+      position: relative;
+      padding-left: 3rem;
+    }
+    
+    .security-feature:before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 24px;
+      height: 24px;
+      background: var(--primary-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    
+    .stat-label {
+      color: #718096;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3e92cc 0%, #0a2463 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
+    /* Notification badge */
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      background-color: var(--danger);
+      border-radius: 50%;
+      color: white;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb-item {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .breadcrumb-item:not(:last-child)::after {
+      content: '/';
+      margin: 0 0.5rem;
+      color: #cbd5e0;
+    }
+
+    /* For smaller screens */
+    @media (max-width: 1024px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo-area p-6 flex items-center">
+        <i class="fas fa-laptop-code text-2xl mr-3"></i>
+        <h1 class="text-xl font-bold">IT Management</h1>
+      </div>
+      
+      <div class="px-4 py-6">
+        <div class="text-xs uppercase font-bold text-gray-300 mb-4 pl-4">Chính</div>
+        
+        <a href="#" class="sidebar-link active">
+          <i class="fas fa-tachometer-alt w-6"></i>
+          <span>Dashboard</span>
+        </a>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-server w-6"></i>
+          <span>Hệ thống</span>
+        </a>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-network-wired w-6"></i>
+          <span>Mạng</span>
+        </a>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-users w-6"></i>
+          <span>Người dùng</span>
+        </a>
+        
+        <div class="text-xs uppercase font-bold text-gray-300 mt-8 mb-4 pl-4">Bảo mật</div>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-shield-alt w-6"></i>
+          <span>Bảo mật</span>
+        </a>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-key w-6"></i>
+          <span>Đổi mật khẩu</span>
+        </a>
+        
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-history w-6"></i>
+          <span>Lịch sử truy cập</span>
+        </a>
+      </div>
+      
+      <div class="mt-auto p-4">
+        <div class="bg-white bg-opacity-10 rounded-xl p-4">
+          <div class="flex items-center">
+            <div class="avatar">
+              <span>IT</span>
+            </div>
+            <div class="ml-3">
+              <p class="font-medium text-sm">Admin IT</p>
+              <p class="text-xs text-gray-300">admin@company.com</p>
+            </div>
+          </div>
+          <hr class="my-3 border-t border-gray-200 border-opacity-20" />
+          <a href="#" class="flex items-center text-sm text-gray-300 hover:text-white">
+            <i class="fas fa-sign-out-alt mr-2"></i>
+            Đăng xuất
+          </a>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800">IT Dashboard</h1>
+            <div class="text-sm text-gray-500 mt-1">
+              <span class="breadcrumb-item">Trang chủ</span>
+              <span class="breadcrumb-item text-gray-800">Dashboard</span>
+            </div>
+          </div>
+          
+          <div class="mt-4 md:mt-0 flex items-center">
+            <div class="relative mr-4">
+              <button class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition">
+                <i class="fas fa-bell text-gray-600"></i>
+                <span class="notification-badge">3</span>
+              </button>
+            </div>
+            
+            <div class="relative">
+              <button class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition">
+                <i class="fas fa-cog text-gray-600"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Status Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="status-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-600 font-medium">Máy chủ</h3>
+            <span class="badge badge-success">Hoạt động</span>
+          </div>
+          <div class="stat-value">12/12</div>
+          <div class="stat-label">Đang hoạt động</div>
+        </div>
+        
+        <div class="status-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-600 font-medium">Người dùng</h3>
+            <span class="badge badge-primary">Bình thường</span>
+          </div>
+          <div class="stat-value">248</div>
+          <div class="stat-label">Đang hoạt động</div>
+        </div>
+        
+        <div class="status-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-600 font-medium">Bảo mật</h3>
+            <span class="badge badge-warning">Cần chú ý</span>
+          </div>
+          <div class="stat-value">2</div>
+          <div class="stat-label">Cảnh báo</div>
+        </div>
+        
+        <div class="status-card p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-gray-600 font-medium">Băng thông</h3>
+            <span class="badge badge-primary">Bình thường</span>
+          </div>
+          <div class="stat-value">68%</div>
+          <div class="stat-label">Đang sử dụng</div>
+        </div>
+      </div>
+      
+      <!-- Main Features -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2">
+          <div class="status-card p-6 h-full">
+            <div class="card-header pb-4 mb-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold">Bảo mật Zero-Knowledge Proof</h2>
+                <span class="badge badge-primary">Đang bật</span>
+              </div>
+            </div>
+            
+            <p class="text-gray-600 mb-6">Hệ thống bảo mật của chúng ta sử dụng Zero-Knowledge Proof để đảm bảo tính bảo mật cao nhất cho dữ liệu và người dùng.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="security-feature">
+                <h4 class="text-lg font-semibold mb-2">Bảo vệ dữ liệu người dùng</h4>
+                <p class="text-gray-600 text-sm">Thông tin người dùng được bảo vệ bằng công nghệ mã hóa hiện đại</p>
+              </div>
+              
+              <div class="security-feature">
+                <h4 class="text-lg font-semibold mb-2">Xác thực không lộ thông tin</h4>
+                <p class="text-gray-600 text-sm">Xác thực mà không tiết lộ thông tin cá nhân với bên thứ ba</p>
+              </div>
+              
+              <div class="security-feature">
+                <h4 class="text-lg font-semibold mb-2">Phòng chống tấn công</h4>
+                <p class="text-gray-600 text-sm">Hệ thống tự động phát hiện và phòng chống các cuộc tấn công mạng</p>
+              </div>
+              
+              <div class="security-feature">
+                <h4 class="text-lg font-semibold mb-2">Quản lý quyền truy cập</h4>
+                <p class="text-gray-600 text-sm">Kiểm soát chặt chẽ quyền truy cập vào hệ thống và dữ liệu</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <div class="password-form p-6">
+            <div class="card-header pb-4 mb-4">
+              <h2 class="text-xl font-bold">Đổi mật khẩu</h2>
+              <p class="text-sm text-gray-500 mt-1">Bảo mật tài khoản của bạn với mật khẩu mạnh</p>
+            </div>
+            
+            <form id="changePassForm" action="/change_password" method="POST" class="space-y-4">
+              <div>
+                <label for="oldSecret" class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu hiện tại</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                  <input
+                    type="password"
+                    name="old_secret"
+                    id="oldSecret"
+                    placeholder="Nhập mật khẩu hiện tại"
+                    required
+                    class="form-input pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label for="newSecret" class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu mới</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                    <i class="fas fa-key"></i>
+                  </span>
+                  <input
+                    type="password"
+                    name="new_secret"
+                    id="newSecret"
+                    placeholder="Nhập mật khẩu mới"
+                    required
+                    class="form-input pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label for="confirmSecret" class="block text-sm font-medium text-gray-700 mb-1">Nhập lại mật khẩu mới</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                    <i class="fas fa-check-double"></i>
+                  </span>
+                  <input
+                    type="password"
+                    name="confirm_secret"
+                    id="confirmSecret"
+                    placeholder="Xác nhận mật khẩu mới"
+                    required
+                    class="form-input pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div class="flex items-center">
+                <input type="checkbox" id="showPassword" class="h-4 w-4 text-primary border-gray-300 rounded" />
+                <label for="showPassword" class="ml-2 block text-sm text-gray-700">
+                  Hiện mật khẩu
+                </label>
+              </div>
+              
+              <button type="submit" class="btn-primary w-full flex items-center justify-center">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Đổi mật khẩu
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Activities -->
+      <div class="status-card p-6">
+        <div class="card-header pb-4 mb-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold">Hoạt động gần đây</h2>
+            <a href="#" class="text-primary-light hover:underline text-sm font-medium">Xem tất cả</a>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <div class="p-2 rounded-full bg-blue-100 text-primary">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="ml-4">
+              <p class="font-medium">Cập nhật chính sách bảo mật</p>
+              <p class="text-sm text-gray-500">1 giờ trước</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="p-2 rounded-full bg-green-100 text-success">
+              <i class="fas fa-server"></i>
+            </div>
+            <div class="ml-4">
+              <p class="font-medium">Khởi động lại máy chủ Database</p>
+              <p class="text-sm text-gray-500">3 giờ trước</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="p-2 rounded-full bg-yellow-100 text-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="ml-4">
+              <p class="font-medium">Cảnh báo băng thông cao</p>
+              <p class="text-sm text-gray-500">5 giờ trước</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="p-2 rounded-full bg-red-100 text-danger">
+              <i class="fas fa-user-times"></i>
+            </div>
+            <div class="ml-4">
+              <p class="font-medium">Khoá tài khoản người dùng</p>
+              <p class="text-sm text-gray-500">1 ngày trước</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <footer class="mt-12 text-center text-sm text-gray-500">
+        <p>&copy; 2025 IT Dashboard. Bản quyền thuộc về Công ty.</p>
+      </footer>
+    </main>
+  </div>
+  
+  <script>
+    // Show/Hide password functionality
+    document.getElementById('showPassword').addEventListener('change', function() {
+      const oldSecret = document.getElementById('oldSecret');
+      const newSecret = document.getElementById('newSecret');
+      const confirmSecret = document.getElementById('confirmSecret');
+      
+      const type = this.checked ? 'text' : 'password';
+      oldSecret.type = type;
+      newSecret.type = type;
+      confirmSecret.type = type;
+    });
+  </script>
+</body>
+</html>

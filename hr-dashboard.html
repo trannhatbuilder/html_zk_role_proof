@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>HR Dashboard - Hệ thống Quản lý Nhân sự</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.1/build/snarkjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/bundle.umd.js"></script>
+  <script src="/static/create_proof.js"></script>
+  <script src="/home/changePass.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f9fafb 0%, #ffe29f 100%);
+    }
+    .hr-header {
+      background: linear-gradient(90deg, #f7971e 0%, #ffd200 100%);
+      box-shadow: 0 4px 16px rgba(247, 151, 30, 0.15);
+    }
+    .hr-card {
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px rgba(247, 151, 30, 0.12);
+      border: 1px solid rgba(247, 151, 30, 0.2);
+      transition: all 0.3s ease;
+    }
+    .hr-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 36px rgba(247, 151, 30, 0.18);
+    }
+    .hr-btn {
+      background: linear-gradient(90deg, #f7971e 0%, #ffd200 100%);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(247, 151, 30, 0.15);
+      transition: all 0.3s ease;
+    }
+    .hr-btn:hover {
+      background: linear-gradient(90deg, #ffd200 0%, #f7971e 100%);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(247, 151, 30, 0.25);
+    }
+    .hr-icon {
+      color: #f7971e;
+    }
+    .sidebar {
+      background: linear-gradient(180deg, #f7971e 0%, #ffd200 100%);
+      box-shadow: 4px 0 16px rgba(247, 151, 30, 0.15);
+    }
+    .sidebar-link {
+      transition: all 0.3s ease;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(5px);
+    }
+    .stat-card {
+      border-left: 4px solid #f7971e;
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px rgba(247, 151, 30, 0.12);
+    }
+    .chart-container {
+      height: 300px;
+    }
+    .calendar-day {
+      height: 80px;
+      transition: all 0.2s ease;
+    }
+    .calendar-day:hover {
+      background-color: #fff8e6;
+    }
+    .calendar-event {
+      background: linear-gradient(90deg, #f7971e 0%, #ffd200 100%);
+      font-size: 0.75rem;
+    }
+    .notification-item {
+      border-left: 3px solid #f7971e;
+      transition: all 0.2s ease;
+    }
+    .notification-item:hover {
+      background-color: #fff8e6;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #ffd200;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #f7971e;
+    }
+    /* Ensure all content displays properly for PDF export */
+    @media print {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        margin-left: 0;
+        width: 100%;
+      }
+      .hidden-print {
+        display: none;
+      }
+    }
+    .employee-avatar {
+      border: 2px solid #f7971e;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50" x-data="{ sidebarOpen: true, activeTab: 'dashboard', showPasswordForm: false }">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="sidebar fixed h-full w-64 text-white z-10" :class="{'hidden': !sidebarOpen, 'block': sidebarOpen}">
+      <div class="p-5 flex items-center justify-between">
+        <div class="flex items-center">
+          <i class="fas fa-users-cog text-2xl mr-3"></i>
+          <h2 class="font-bold text-xl">HR Manager</h2>
+        </div>
+        <button @click="sidebarOpen = false" class="lg:hidden text-white">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="mt-5">
+        <a href="#dashboard" @click="activeTab = 'dashboard'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'dashboard'}">
+          <i class="fas fa-tachometer-alt w-6"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#employees" @click="activeTab = 'employees'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'employees'}">
+          <i class="fas fa-user-tie w-6"></i>
+          <span>Nhân viên</span>
+        </a>
+        <a href="#recruitment" @click="activeTab = 'recruitment'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'recruitment'}">
+          <i class="fas fa-user-plus w-6"></i>
+          <span>Tuyển dụng</span>
+        </a>
+        <a href="#analytics" @click="activeTab = 'analytics'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'analytics'}">
+          <i class="fas fa-chart-pie w-6"></i>
+          <span>Phân tích</span>
+        </a>
+        <a href="#settings" @click="activeTab = 'settings'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'settings'}">
+          <i class="fas fa-cog w-6"></i>
+          <span>Cài đặt</span>
+        </a>
+        <a href="#security" @click="activeTab = 'security'" class="sidebar-link flex items-center p-4 text-white" :class="{'active': activeTab === 'security'}">
+          <i class="fas fa-shield-alt w-6"></i>
+          <span>Bảo mật</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content flex-1 ml-0 lg:ml-64 transition-all duration-300 ease-in-out">
+      <!-- Top Navigation -->
+      <div class="hr-header flex justify-between items-center p-4 text-white">
+        <div class="flex items-center">
+          <button @click="sidebarOpen = !sidebarOpen" class="mr-4 text-2xl">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 class="text-2xl font-bold">HR Dashboard</h1>
+        </div>
+        <div class="flex items-center">
+          <div class="mr-4 relative" x-data="{ showNotifications: false }">
+            <button @click="showNotifications = !showNotifications" class="relative">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+            </button>
+            <div x-show="showNotifications" @click.away="showNotifications = false" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg p-4 z-20" style="display: none;">
+              <h3 class="font-bold mb-2 text-gray-800">Thông báo</h3>
+              <div class="max-h-60 overflow-y-auto custom-scrollbar">
+                <div class="notification-item p-2 mb-2 bg-gray-50 rounded">
+                  <div class="text-sm font-medium text-gray-800">Lịch phỏng vấn mới</div>
+                  <div class="text-xs text-gray-600">Phỏng vấn ứng viên vị trí UI/UX Designer lúc 14:00</div>
+                  <div class="text-xs text-gray-500 mt-1">1 giờ trước</div>
+                </div>
+                <div class="notification-item p-2 mb-2 bg-gray-50 rounded">
+                  <div class="text-sm font-medium text-gray-800">Đơn nghỉ phép chờ duyệt</div>
+                  <div class="text-xs text-gray-600">Nguyễn Văn A yêu cầu nghỉ phép 3 ngày</div>
+                  <div class="text-xs text-gray-500 mt-1">3 giờ trước</div>
+                </div>
+                <div class="notification-item p-2 bg-gray-50 rounded">
+                  <div class="text-sm font-medium text-gray-800">Đánh giá hiệu suất</div>
+                  <div class="text-xs text-gray-600">Hạn chót đánh giá hiệu suất Q2 là tuần sau</div>
+                  <div class="text-xs text-gray-500 mt-1">1 ngày trước</div>
+                </div>
+              </div>
+              <a href="#" class="block text-center text-sm text-blue-500 hover:underline mt-2">Xem tất cả</a>
+            </div>
+          </div>
+          <div class="relative" x-data="{ showUserMenu: false }">
+            <button @click="showUserMenu = !showUserMenu" class="flex items-center">
+              <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="User Profile" class="w-8 h-8 rounded-full border-2 border-white">
+              <span class="ml-2 font-medium">Hồng Nhung</span>
+              <i class="fas fa-chevron-down ml-1 text-xs"></i>
+            </button>
+            <div x-show="showUserMenu" @click.away="showUserMenu = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg p-2 z-20" style="display: none;">
+              <a href="#profile" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">
+                <i class="fas fa-user mr-2 text-gray-600"></i> Hồ sơ
+              </a>
+              <a href="#settings" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">
+                <i class="fas fa-cog mr-2 text-gray-600"></i> Cài đặt
+              </a>
+              <div class="border-t my-1 border-gray-200"></div>
+              <a href="#logout" class="block px-4 py-2 text-red-600 hover:bg-gray-100 rounded">
+                <i class="fas fa-sign-out-alt mr-2"></i> Đăng xuất
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Wrapper -->
+      <div class="p-6 bg-gray-50">
+        <!-- Dashboard Overview (Default View) -->
+        <div x-show="activeTab === 'dashboard'" class="space-y-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Tổng quan</h2>
+            <div class="flex space-x-2">
+              <button class="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-calendar-alt mr-1"></i> Hôm nay
+              </button>
+              <button class="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-filter mr-1"></i> Bộ lọc
+              </button>
+              <button class="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-download mr-1"></i> Xuất báo cáo
+              </button>
+            </div>
+          </div>
+          
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="stat-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500">Tổng nhân viên</p>
+                  <h3 class="text-2xl font-bold text-gray-800 mt-1">248</h3>
+                </div>
+                <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-users text-yellow-500 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center">
+                <span class="text-green-500 flex items-center text-sm">
+                  <i class="fas fa-arrow-up mr-1"></i>3.2%
+                </span>
+                <span class="text-gray-500 text-sm ml-2">So với tháng trước</span>
+              </div>
+            </div>
+            
+            <div class="stat-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500">Tuyển dụng mới</p>
+                  <h3 class="text-2xl font-bold text-gray-800 mt-1">12</h3>
+                </div>
+                <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user-plus text-green-500 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center">
+                <span class="text-green-500 flex items-center text-sm">
+                  <i class="fas fa-arrow-up mr-1"></i>8.1%
+                </span>
+                <span class="text-gray-500 text-sm ml-2">So với tháng trước</span>
+              </div>
+            </div>
+            
+            <div class="stat-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500">Nghỉ việc</p>
+                  <h3 class="text-2xl font-bold text-gray-800 mt-1">5</h3>
+                </div>
+                <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user-minus text-red-500 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center">
+                <span class="text-red-500 flex items-center text-sm">
+                  <i class="fas fa-arrow-up mr-1"></i>2.1%
+                </span>
+                <span class="text-gray-500 text-sm ml-2">So với tháng trước</span>
+              </div>
+            </div>
+            
+            <div class="stat-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-500">Tỷ lệ nghỉ việc</p>
+                  <h3 class="text-2xl font-bold text-gray-800 mt-1">2.1%</h3>
+                </div>
+                <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-chart-line text-blue-500 text-xl"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center">
+                <span class="text-green-500 flex items-center text-sm">
+                  <i class="fas fa-arrow-down mr-1"></i>0.5%
+                </span>
+                <span class="text-gray-500 text-sm ml-2">So với tháng trước</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Charts Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Biểu đồ nhân sự theo phòng ban</h3>
+                <div class="text-sm text-gray-500">
+                  <i class="fas fa-circle text-yellow-500 mr-1"></i> 2023
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="departmentChart"></canvas>
+              </div>
+            </div>
+            
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Xu hướng tuyển dụng</h3>
+                <div class="text-sm text-gray-500">
+                  <i class="fas fa-circle text-yellow-500 mr-1"></i> 12 tháng qua
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="recruitmentChart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recent Activity & Calendar Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Recruitment Calendar -->
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm lg:col-span-2">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Lịch tuyển dụng</h3>
+                <div class="flex space-x-2">
+                  <button class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <span class="font-medium">Tháng 7, 2023</span>
+                  <button class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-7 gap-2">
+                <div class="text-center text-sm font-medium text-gray-500 py-2">CN</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T2</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T3</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T4</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T5</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T6</div>
+                <div class="text-center text-sm font-medium text-gray-500 py-2">T7</div>
+                
+                <!-- Calendar Days -->
+                <div class="calendar-day border border-gray-200 rounded p-1 text-gray-400">30</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">1</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">2</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">
+                  3
+                  <div class="calendar-event px-1 py-0.5 mt-1 text-white rounded text-xs truncate">
+                    Phỏng vấn UI/UX (3)
+                  </div>
+                </div>
+                <div class="calendar-day border border-gray-200 rounded p-1">4</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">5</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">6</div>
+                
+                <div class="calendar-day border border-gray-200 rounded p-1">7</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">8</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">9</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">10</div>
+                <div class="calendar-day border border-gray-200 rounded p-1 bg-yellow-50">
+                  11
+                  <div class="calendar-event px-1 py-0.5 mt-1 text-white rounded text-xs truncate">
+                    Onboarding (2)
+                  </div>
+                </div>
+                <div class="calendar-day border border-gray-200 rounded p-1">12</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">13</div>
+                
+                <div class="calendar-day border border-gray-200 rounded p-1">14</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">15</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">
+                  16
+                  <div class="calendar-event px-1 py-0.5 mt-1 text-white rounded text-xs truncate">
+                    Phỏng vấn Dev (5)
+                  </div>
+                </div>
+                <div class="calendar-day border border-gray-200 rounded p-1">17</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">18</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">19</div>
+                <div class="calendar-day border border-gray-200 rounded p-1">20</div>
+              </div>
+            </div>
+            
+            <!-- Recent Activity Feed -->
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Hoạt động gần đây</h3>
+                <a href="#" class="text-sm text-yellow-600 hover:text-yellow-800">Xem tất cả</a>
+              </div>
+              
+              <div class="space-y-4 max-h-80 overflow-y-auto custom-scrollbar">
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 mr-3">
+                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User" class="w-8 h-8 rounded-full employee-avatar">
+                  </div>
+                  <div>
+                    <p class="text-sm">
+                      <span class="font-medium text-gray-900">Hương Trần</span>
+                      <span class="text-gray-600">đã chấp nhận đơn nghỉ phép của</span>
+                      <span class="font-medium text-gray-900">Minh Nguyễn</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">15 phút trước</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 mr-3">
+                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" class="w-8 h-8 rounded-full employee-avatar">
+                  </div>
+                  <div>
+                    <p class="text-sm">
+                      <span class="font-medium text-gray-900">Khoa Phan</span>
+                      <span class="text-gray-600">đã tạo một vị trí tuyển dụng mới cho</span>
+                      <span class="font-medium text-gray-900">UX Designer</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">1 giờ trước</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 mr-3">
+                    <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="User" class="w-8 h-8 rounded-full employee-avatar">
+                  </div>
+                  <div>
+                    <p class="text-sm">
+                      <span class="font-medium text-gray-900">Hồng Nhung</span>
+                      <span class="text-gray-600">đã thêm</span>
+                      <span class="font-medium text-gray-900">Trung Kiên</span>
+                      <span class="text-gray-600">vào danh sách nhân viên</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">3 giờ trước</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 mr-3">
+                    <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="User" class="w-8 h-8 rounded-full employee-avatar">
+                  </div>
+                  <div>
+                    <p class="text-sm">
+                      <span class="font-medium text-gray-900">Tuấn Anh</span>
+                      <span class="text-gray-600">đã cập nhật báo cáo</span>
+                      <span class="font-medium text-gray-900">Đánh giá hiệu suất Q2</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">5 giờ trước</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="flex-shrink-0 mr-3">
+                    <img src="https://randomuser.me/api/portraits/women/22.jpg" alt="User" class="w-8 h-8 rounded-full employee-avatar">
+                  </div>
+                  <div>
+                    <p class="text-sm">
+                      <span class="font-medium text-gray-900">Mai Anh</span>
+                      <span class="text-gray-600">đã lên lịch phỏng vấn với 5 ứng viên cho vị trí</span>
+                      <span class="font-medium text-gray-900">Frontend Developer</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">1 ngày trước</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Employees Section -->
+        <div x-show="activeTab === 'employees'" class="space-y-6" style="display: none;">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Quản lý nhân viên</h2>
+            <button class="hr-btn px-4 py-2 rounded-lg flex items-center">
+              <i class="fas fa-plus mr-2"></i> Thêm nhân viên
+            </button>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div class="relative flex-grow max-w-md">
+                <input type="text" placeholder="Tìm kiếm nhân viên..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+              </div>
+              <div class="flex items-center space-x-2">
+                <select class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                  <option>Tất cả phòng ban</option>
+                  <option>Kỹ thuật</option>
+                  <option>Marketing</option>
+                  <option>Nhân sự</option>
+                  <option>Kinh doanh</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                  <option>Tất cả vị trí</option>
+                  <option>Giám đốc</option>
+                  <option>Trưởng phòng</option>
+                  <option>Nhân viên</option>
+                </select>
+                <button class="border border-gray-300 rounded-lg p-2 hover:bg-gray-50">
+                  <i class="fas fa-filter"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân viên</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phòng ban</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vị trí</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày vào làm</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <img class="h-10 w-10 rounded-full employee-avatar" src="https://randomuser.me/api/portraits/women/44.jpg" alt="">
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900">Hương Trần</div>
+                          <div class="text-sm text-gray-500">huong.tran@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">EMP-2021</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Nhân sự</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Trưởng phòng</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">15/03/2019</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Đang làm việc
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a href="#" class="text-yellow-600 hover:text-yellow-900 mr-3"><i class="fas fa-eye"></i></a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900 mr-3"><i class="fas fa-edit"></i></a>
+                      <a href="#" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <img class="h-10 w-10 rounded-full employee-avatar" src="https://randomuser.me/api/portraits/men/32.jpg" alt="">
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900">Khoa Phan</div>
+                          <div class="text-sm text-gray-500">khoa.phan@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">EMP-1498</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Kỹ thuật</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Trưởng nhóm</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">05/07/2020</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Đang làm việc
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a href="#" class="text-yellow-600 hover:text-yellow-900 mr-3"><i class="fas fa-eye"></i></a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900 mr-3"><i class="fas fa-edit"></i></a>
+                      <a href="#" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <img class="h-10 w-10 rounded-full employee-avatar" src="https://randomuser.me/api/portraits/men/45.jpg" alt="">
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900">Tuấn Anh</div>
+                          <div class="text-sm text-gray-500">tuan.anh@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">EMP-1845</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Kinh doanh</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Giám đốc kinh doanh</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">12/11/2018</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Đang làm việc
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a href="#" class="text-yellow-600 hover:text-yellow-900 mr-3"><i class="fas fa-eye"></i></a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900 mr-3"><i class="fas fa-edit"></i></a>
+                      <a href="#" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                          <img class="h-10 w-10 rounded-full employee-avatar" src="https://randomuser.me/api/portraits/women/22.jpg" alt="">
+                        </div>
+                        <div class="ml-4">
+                          <div class="text-sm font-medium text-gray-900">Mai Anh</div>
+                          <div class="text-sm text-gray-500">mai.anh@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">EMP-2367</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Nhân sự</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">Chuyên viên tuyển dụng</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-900">23/01/2021</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Đang làm việc
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a href="#" class="text-yellow-600 hover:text-yellow-900 mr-3"><i class="fas fa-eye"></i></a>
+                      <a href="#" class="text-blue-600 hover:text-blue-900 mr-3"><i class="fas fa-edit"></i></a>
+                      <a href="#" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm text-gray-700">
+                    Hiển thị <span class="font-medium">1</span> đến <span class="font-medium">4</span> của <span class="font-medium">248</span> nhân viên
+                  </p>
+                </div>
+                <div>
+                  <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-yellow-50 text-sm font-medium text-yellow-600 hover:bg-yellow-100">
+                      1
+                    </a>
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      2
+                    </a>
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      3
+                    </a>
+                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                      ...
+                    </span>
+                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      25
+                    </a>
+                    <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <i class="fas fa-chevron-right"></i>
+                    </a>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Section -->
+        <div x-show="activeTab === 'security'" class="space-y-6" style="display: none;">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Bảo mật</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm md:col-span-2">
+              <div class="mb-6 text-center">
+                <div class="h-16 w-16 bg-yellow-100 rounded-full mx-auto flex items-center justify-center">
+                  <i class="fas fa-user-shield text-yellow-500 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mt-3">Bảo mật nhân sự nâng cao</h3>
+                <p class="mt-2 text-gray-700">Bạn đang truy cập giao diện quản lý nhân sự. Hãy đảm bảo thông tin cá nhân luôn được bảo vệ bằng Zero-Knowledge Proof.</p>
+              </div>
+              
+              <div class="max-w-md mx-auto">
+                <button
+                  @click="showPasswordForm = !showPasswordForm"
+                  class="hr-btn mb-4 px-6 py-3 rounded-lg font-semibold transition w-full flex items-center justify-center gap-2"
+                >
+                  <i class="fas fa-key hr-icon"></i> Đổi mật khẩu
+                </button>
+                
+                <form id="changePassForm" action="/change_password" method="POST" x-show="showPasswordForm" class="space-y-4 bg-yellow-50 rounded-xl shadow-md p-8" style="display: none;">
+                  <div>
+                    <input
+                      type="password"
+                      name="old_secret"
+                      id="oldSecret"
+                      placeholder="Mật khẩu hiện tại"
+                      required
+                      class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      name="new_secret"
+                      id="newSecret"
+                      placeholder="Mật khẩu mới"
+                      required
+                      class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      name="confirm_secret"
+                      id="confirmSecret"
+                      placeholder="Nhập lại mật khẩu mới"
+                      required
+                      class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="showPassword" class="mr-2" />
+                    <label for="showPassword" class="text-sm text-gray-700 select-none">Hiện mật khẩu</label>
+                  </div>
+                  <button
+                    type="submit"
+                    class="hr-btn w-full py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  >
+                    <i class="fas fa-sync-alt hr-icon"></i> Đổi mật khẩu
+                  </button>
+                </form>
+              </div>
+            </div>
+            
+            <div class="hr-card bg-white p-6 rounded-lg shadow-sm">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">Cài đặt bảo mật</h3>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-gray-800 font-medium">Xác thực hai yếu tố</p>
+                    <p class="text-sm text-gray-500">Tăng cường bảo mật với xác thực 2FA</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox">
+                    <span class="slider bg-gray-300 w-12 h-6 rounded-full relative inline-block">
+                      <span class="absolute h-5 w-5 bg-white rounded-full top-0.5 left-0.5 transition-all duration-300"></span>
+                    </span>
+                  </label>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-gray-800 font-medium">Phiên đăng nhập an toàn</p>
+                    <p class="text-sm text-gray-500">Tự động đăng xuất sau 30 phút không hoạt động</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider bg-yellow-500 w-12 h-6 rounded-full relative inline-block">
+                      <span class="absolute h-5 w-5 bg-white rounded-full top-0.5 left-6 transition-all duration-300"></span>
+                    </span>
+                  </label>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-gray-800 font-medium">Thông báo đăng nhập</p>
+                    <p class="text-sm text-gray-500">Nhận thông báo khi có đăng nhập mới</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider bg-yellow-500 w-12 h-6 rounded-full relative inline-block">
+                      <span class="absolute h-5 w-5 bg-white rounded-full top-0.5 left-6 transition-all duration-300"></span>
+                    </span>
+                  </label>
+                </div>
+                
+                <div class="pt-4">
+                  <h4 class="text-sm font-medium text-gray-800 mb-2">Lịch sử đăng nhập</h4>
+                  <div class="space-y-2">
+                    <div class="bg-gray-50 p-2 rounded">
+                      <div class="flex justify-between">
+                        <span class="text-sm">Hà Nội, Việt Nam</span>
+                        <span class="text-xs text-gray-500">Hôm nay, 09:45</span>
+                      </div>
+                      <div class="text-xs text-gray-500">Chrome trên Windows</div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-2 rounded">
+                      <div class="flex justify-between">
+                        <span class="text-sm">Hà Nội, Việt Nam</span>
+                        <span class="text-xs text-gray-500">Hôm qua, 14:30</span>
+                      </div>
+                      <div class="text-xs text-gray-500">Safari trên MacOS</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FontAwesome for icons -->
+  <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/js/all.min.js"></script>
+  
+  <!-- Charts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Department Chart
+      const deptCtx = document.getElementById('departmentChart').getContext('2d');
+      const departmentChart = new Chart(deptCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Kỹ thuật', 'Kinh doanh', 'Marketing', 'Nhân sự', 'Tài chính', 'Sản xuất'],
+          datasets: [{
+            label: 'Số lượng nhân viên',
+            data: [65, 48, 32, 18, 15, 70],
+            backgroundColor: [
+              'rgba(247, 151, 30, 0.8)',
+              'rgba(247, 151, 30, 0.7)',
+              'rgba(247, 151, 30, 0.6)',
+              'rgba(247, 151, 30, 0.5)',
+              'rgba(247, 151, 30, 0.4)',
+              'rgba(247, 151, 30, 0.3)'
+            ],
+            borderColor: [
+              'rgba(247, 151, 30, 1)',
+              'rgba(247, 151, 30, 1)',
+              'rgba(247, 151, 30, 1)',
+              'rgba(247, 151, 30, 1)',
+              'rgba(247, 151, 30, 1)',
+              'rgba(247, 151, 30, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+      
+      // Recruitment Chart
+      const recCtx = document.getElementById('recruitmentChart').getContext('2d');
+      const recruitmentChart = new Chart(recCtx, {
+        type: 'line',
+        data: {
+          labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'],
+          datasets: [
+            {
+              label: 'Tuyển mới',
+              data: [5, 3, 8, 2, 7, 6, 10, 8, 5, 12, 9, 3],
+              fill: false,
+              borderColor: 'rgba(247, 151, 30, 1)',
+              tension: 0.4,
+              borderWidth: 3
+            },
+            {
+              label: 'Nghỉ việc',
+              data: [2, 1, 3, 2, 4, 1, 2, 3, 2, 5, 3, 1],
+              fill: false,
+              borderColor: '#e74c3c',
+              tension: 0.4,
+              borderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 2
+              },
+              grid: {
+                borderDash: [3, 3]
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+  
+  <!-- Toggle password visibility script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const showPasswordCheckbox = document.getElementById('showPassword');
+      const passwordFields = [
+        document.getElementById('oldSecret'),
+        document.getElementById('newSecret'),
+        document.getElementById('confirmSecret')
+      ];
+      
+      if (showPasswordCheckbox && passwordFields.every(field => field)) {
+        showPasswordCheckbox.addEventListener('change', function() {
+          const type = this.checked ? 'text' : 'password';
+          passwordFields.forEach(field => {
+            field.type = type;
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
